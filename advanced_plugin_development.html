@@ -24,6 +24,7 @@ $total = $db->fetch_field($query, "total");
 [/php]
 
 2) Calculate how many pages there are.
+
 [php]
 if($mybb->settings['ppp']) // Using posts per page.  tpp for threads per page
 {
@@ -38,6 +39,7 @@ $pages = ceil($total / $perpage);
 
 3) Figure out the current page.
 
+[php]
 if($mybb->input['page'])
 {
   $page = $mybb->get_input('page', 1);
@@ -64,4 +66,73 @@ $url = $mybb->settings['bburl'] . "/somepage.php?parameter1=$x";
 5) Now use the multipage function and put your variable in your templates.
 [php]
 $pagination = multipage($total, $perpage, $page, $url);
+[/php]
+
+Creating a new page
+===================
+
+1) Be sure right near the top you define the constant IN_MYBB before you do require_once "global.php".  It is also important to
+initialize the variable $templatelist before this otherwise each template you use in the page will cost an extra query.
+
+[php]
+<?php
+define("IN_MYBB", 1);
+
+// This next line is optional and disables plugins on the page.
+
+define("NO_PLUGINS", 1);
+// If the page should not be shown on who's online include the following:
+
+define("NO_ONLINE", 1);
+
+$templatelist = "my_template1,my_template2";
+
+// You may need to edit the next line if the page is not in your forum root directory.
+
+require_once "global.php";
+
+/* You can restrict page access with permissions.
+* To get a full list of these permissions, look at the mybb_usergroups table.
+*/
+
+if(!$mybb->usergroup['permission_name'])
+{
+  error_no_permission();
+}
+
+/* You can also disallow access based on what usergroup the person is in.
+
+$allowedusergroups = array(3,4,6); /* Default mod usergroups */
+$usergroups = $mybb->user['usergroup'];
+if($mybb->user['additionalgroups'])
+{
+  $usergroups .= "," . $mybb->user['additionalgroups'];
+}
+$usergroups = explode(",", $usergroups);
+$allowed = 0;
+foreach($usergroups as $group)
+{
+  if(in_array($group, $allowedusergroups))
+  {
+    $allowed = 1;
+    continue;
+  }
+}
+if(!$allowed)
+{
+  error_no_permission();
+}
+
+// To use a template you will need to use the following syntax:
+eval("\$variablename = \"".$templates->get("my_template1")."\";");
+
+/* Using caches can be beneficial if it is something that will not get changed frequently.  It saves database queries.
+* You can get the data of a cache like this:
+*/
+$usergroups = $cache->read("usergroups");
+
+/* The bottom of your page should finish by using the output_page function on the variable with your template that has all content on it.
+* This also grants access to the debug information if that is enabled and the user has permission to view it. */
+output_page($variablename);
+?>
 [/php]
