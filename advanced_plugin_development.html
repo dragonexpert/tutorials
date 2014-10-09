@@ -136,3 +136,43 @@ $usergroups = $cache->read("usergroups");
 output_page($variablename);
 ?>
 [/php]
+
+
+Adding a custom online location:
+================================
+
+Adding a custom online location will require using two hooks: fetch_wol_activity_end and build_friendly_wol_location_end.
+In the fetch_wol_activity_end you will need to define an activity name and return any parameters as well in an array.  
+Here is an example:
+[php]
+function my_plugin_wol($user_activity)
+{
+  global $parameters;
+  if(strpos($user_activity['location'], "my_file.php"))
+  {
+    $user_activity['activity'] = "my_file";
+    // If I had any parameters I would do them like this:
+    $user_activity['parameter_name'] = $parameters['parameter_name'];
+  }
+  return $user_activity;
+}
+[/php]
+
+In the build_friendly_wol_location_end you will handle the activity you assigned it in the previous function.
+
+[php]
+function my_plugin_friendly_loc($array)
+{
+  global $user_activity; 
+  /* Globalize $db if you want to query the database for needed parameters.  
+  * Also whichever variable you cache data in needs to be globalized.
+  * Globalize $cache if you are reading from a cache.
+  */
+  if($array['user_activity']['activity'] == "my_file") /* Replace my_file with whatever you called the activity in the previous function. */
+  {
+    $array['location_name'] = "html mark up of the location.  This can include a link.";
+  }
+  return $array;
+}
+[/php]
+  
