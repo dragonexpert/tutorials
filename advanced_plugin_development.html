@@ -1,0 +1,67 @@
+This tutorial is going to teach you some of the more advanced techniques in plugin development.  You should have good knowledge
+of PHP and MySQL.
+
+Using $mybb->get_input:
+=======================
+This function has two parameters.  The first is the field name.  The second argument is numeric and can be 0 for string, 1 for integer,
+or 2 for an array.
+
+Ex. $mybb->get_input('uid', 1); /* This returns the uid that the page was accessed with and casts it to the integer type.
+
+In 1.8.1 the get_input method will still support this, but will also be able to use these instead:
+[php]
+$mybb->get_input('uid', MyBB::INPUT_INT);
+$mybb->get_input('username', MyBB::INPUT_STRING);
+$mybb->get_input('myarray', MyBB::INPUT_ARRAY);
+[/php]
+
+How to do Pagination:
+=====================
+1) Figure out how many items there are.
+[php]
+$query = $db->simple_select("sometable", "COUNT(primarykey) as total", "any where conditions");
+$total = $db->fetch_field($query, "total");
+[/php]
+
+2) Calculate how many pages there are.
+[php]
+if($mybb->settings['ppp']) // Using posts per page.  tpp for threads per page
+{
+  $perpage = (int) $mybb->settings['ppp'];
+}
+else
+{
+  $perpage = 10; // I chose 10, but you can put what you like
+}
+$pages = ceil($total / $perpage);
+[/php]
+
+3) Figure out the current page.
+
+if($mybb->input['page'])
+{
+  $page = $mybb->get_input('page', 1);
+}
+else
+{
+  $page = 1;
+}
+if($page < 1)
+{
+  $page = 1;
+}
+if($page > $pages)
+{
+  $page = $pages;
+}
+[/php]
+
+4) Define the base url and any parameters to be passed to it.
+[php]
+$url = $mybb->settings['bburl'] . "/somepage.php?parameter1=$x";
+[/php]
+
+5) Now use the multipage function and put your variable in your templates.
+[php]
+$pagination = multipage($total, $perpage, $page, $url);
+[/php]
