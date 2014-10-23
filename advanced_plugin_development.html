@@ -1,6 +1,14 @@
 This tutorial is going to teach you some of the more advanced techniques in plugin development.  You should have good knowledge
 of PHP and MySQL.
 
+Topics Covered:
+- $mybb->get_input
+- Pagination
+- Custom Pages
+- Custom Online Locations
+- Working with Permission Viewer
+
+
 Using $mybb->get_input:
 =======================
 This function has two parameters.  The first is the field name.  The second argument is numeric and can be 0 for string, 1 for integer,
@@ -208,3 +216,29 @@ $l['lot_lockownthreads'] = "Can lock own threads?";
 ?>
 
 That's all there is to it.  Now it loads the language so users of Permission Viewer easily know what the permission is.
+
+<h2>Custom Admin Log Entries</h2>
+
+If you have ever tried logging entries into the Admin Log you will know it gets really ugly and hard to read.
+
+First you are going to need to hook to "admin_tools_adminlog_begin" and load your admin language.
+You will then need to hook to "admin_tools_get_admin_log_action".
+
+In that function you'll want it to look like this code borrowed from my social groups plugin:
+[php]
+function socialgroups_admin_tools_get_admin_log_action(&$plugin_array)
+{
+    global $mybb, $db, $logitem;
+    if($plugin_array['logitem']['module'] == "user-social_groups")
+    {
+        if($plugin_array['logitem']['data']['action'] == "edit_category")
+        {
+            $plugin_array['lang_string'] = "admin_log_user_social_groups_manage_categories_edit_category";
+        }
+        if($plugin_array['logitem']['data']['action'] == "add_category")
+        {
+            $plugin_array['lang_string'] = "admin_log_user_social_groups_manage_categories_add_category";
+        }
+        return $plugin_array;
+    }
+}[/php]
