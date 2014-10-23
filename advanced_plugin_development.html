@@ -176,3 +176,35 @@ function my_plugin_friendly_loc($array)
 }
 [/php]
   
+<h2>Making your plugin work easily with <a href="https://github.com/dragonexpert/permissionviewer">Permission Viewer</a></h2>
+
+You may ask why you should make it work with the Permission Viewer.  Permission Viewer is a plugin that allows one to quickly 
+view what permissions a member has.  It accounts for both their primary usergroup and any additional usergroups.  If your plugin
+adds fields to the mybb_usergroups table, it will normally just list it as the database field which isn't always human readable.
+
+In your _info function add the following keys: "language_file" and "language_prefix".  Language file will be the file name of the 
+language file without the .lang.php extension.  The key "language_prefix" should be used if you intend on using a different name
+forthe language variable than its database field.
+
+When you are creating your language file that goes in the /inc/languages/english/admin folder, any database field created by theplugin
+in the mybb_usergroups table should use your prefix followed by the database field name.  
+
+Ex. A plugin adds the field canlockownthreads.
+
+The plugin file should look like this:
+lockownthreads_info()
+{
+  return array(
+  // normal keys go here
+  "language_file" => "lockownthreads",
+  "language_prefix" => "lot_"
+  );
+}
+
+Now our language file should be named "lockownthreads.lang.php".  It should look like this:
+<?php
+$l['lot_lockownthreads'] = "Can lock own threads?";
+// any other language variables
+?>
+
+That's all there is to it.  Now it loads the language so users of Permission Viewer easily know what the permission is.
