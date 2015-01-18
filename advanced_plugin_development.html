@@ -26,6 +26,13 @@ $mybb->get_input('username', MyBB::INPUT_STRING);
 $mybb->get_input('myarray', MyBB::INPUT_ARRAY);
 [/php]
 
+<b>Why should I use $mybb->get_input?</b>
+
+The use of $mybb->get_input is preferred over $mybb->input because it will automatically typecast the value to the correct 
+data type.  By default, the data type is string.  You should use this because if a person were to use parameter[]=x and your code
+uses $safepid = $db->escape_string($mybb->input['parameter']) it would return a warning stating that the value passed was an array,
+expected type string.  Using (int)$mybb->input['parameter'] is ok as well.
+
 New Setting Types:
 ==================
 A few new setting types were added to the 1.8 series of MyBB.  The first is called forumselect which builds a list 
