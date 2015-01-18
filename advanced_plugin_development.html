@@ -3,9 +3,11 @@ of PHP and MySQL.
 
 Topics Covered:
 - $mybb->get_input
+- New Setting Types
 - Pagination
 - Custom Pages
 - Custom Online Locations
+- Creating new Admin Modules
 - Working with Permission Viewer
 
 
@@ -16,12 +18,20 @@ or 2 for an array.
 
 Ex. $mybb->get_input('uid', 1); /* This returns the uid that the page was accessed with and casts it to the integer type.
 
-In 1.8.1 the get_input method will still support this, but will also be able to use these instead:
+In 1.8.1 and newer the get_input method will still support this, but will also be able to use these instead:
 [php]
 $mybb->get_input('uid', MyBB::INPUT_INT);
 $mybb->get_input('username', MyBB::INPUT_STRING);
 $mybb->get_input('myarray', MyBB::INPUT_ARRAY);
 [/php]
+
+New Setting Types:
+==================
+A few new setting types were added to the 1.8 series of MyBB.  The first is called forumselect which builds a list 
+of selectable forums for the user.  Multiple selections are allowed.  There is an option for None and All.  Another new type
+is groupselect which builds a list of usergroups.  Multiple usergroups are allowed.  As of 1.8.3, no all method exists.  Lastly,
+there is numeric which makes the setting an integer.
+
 
 How to do Pagination:
 =====================
@@ -183,6 +193,52 @@ function my_plugin_friendly_loc($array)
   return $array;
 }
 [/php]
+  
+
+Creating a new Admin Module:
+============================
+Creating a new Admin module will take a bit of work.  First, if it needs to be in the navbar at the top, you will need to
+create a new folder in your /admin/modules directory. You'll then need to create a file called module_meta.php.  It will need
+to look similar to other module_meta.php files in your other modules.  If you are simply creating a new module under an existing
+one, you need to use the following hooks: admin_base-module-name_menu, admin_base-module-name_action_handler, and
+admin_base-module-name_permissions if you intend on forcing admin permissions. The following example will add a link under 
+the menu in Templates & Style.  It will give an example of how to teach it where the code is, and how to decide what to do.
+
+[php]
+$plugins->add_hook("admin_style_menu", "theme_vars_admin_style_menu");
+$plugins->add_hook("admin_style_action_handler", "theme_vars_admin_style_action_handler");
+$plugins->add_hook("admin_style_permissions", "theme_vars_admin_style_permissions"); /* If you do not want to check permissions,
+this line should be commented out. */
+
+function theme_vars_admin_style_menu(&$sub_menu) /* Note that this variable is passed by reference. */
+{
+    $key = count($sub_menu) *10 + 10; /* We need a unique key here so this works well. */
+    $sub_menu[$key] = array(
+    "id" => "theme_vars",
+    "title" => "Theme Variables",
+    "link" => "index.php?module=style-theme_vars"
+    );
+}
+function theme_vars_admin_style_action_handler(&$actions) /* Note that this variable is passed by reference. */
+{
+    $actions['theme_vars'] = array(
+    "active" => "theme_vars",
+    "file" => "theme_variables.php"
+    );
+}
+function theme_vars_admin_style_permissions(&$admin_permissions)/* Note that this variable is passed by reference. */
+{
+       $admin_permissions['theme_vars'] = "Can Manage Theme Variables";
+}
+[/php]
+
+After doing this, you will need to create your file under the correct module folder.  In this example, we would create a file
+called theme_variables.php in the /admin/modules/style directory.  Failure to do this will result in a fatal PHP error.
+
+When you need to create forms you should use the DefaultForm and FormContainer classes.  Creating tables should be done using the
+TABLE class.  In the Admin CP, you do not need to use the function verify_post_check because it automatically does this
+anytime it receives a POST request.
+
   
 <h2>Making your plugin work easily with <a href="https://github.com/dragonexpert/permissionviewer">Permission Viewer</a></h2>
 
