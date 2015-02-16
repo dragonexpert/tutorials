@@ -307,3 +307,19 @@ function socialgroups_admin_tools_get_admin_log_action(&$plugin_array)
         return $plugin_array;
     }
 }[/php]
+
+Checking If Plugin is installed without a database query
+========================================================
+
+You can check if a plugin is installed without a database query by using this small bit of code:
+[php]
+function myplugin_is_installed()
+global $cache;
+$activeplugins = $cache->read("plugins");
+// Replace myplugin with the name of the file without the extension.
+if(array_key_exists("myplugin", $activeplugins['active']))
+{
+  return true;
+}
+return false;
+}
