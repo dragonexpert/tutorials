@@ -3,11 +3,14 @@ of PHP and MySQL.
 
 Topics Covered:
 - $mybb->get_input
+- PHP 8 Considerations
 - New Setting Types
 - Pagination
 - Custom Pages
 - Custom Online Locations
 - Creating new Admin Modules
+- Admin Tables
+- Admin Forms
 - Working with Permission Viewer
 - Custom Admin Log Entries
 
@@ -15,7 +18,7 @@ Topics Covered:
 Using $mybb->get_input:
 =======================
 This function has two parameters.  The first is the field name.  The second argument is numeric and can be 0 for string, 1 for integer,
-or 2 for an array.
+or 2 for an array.  Using $Mybb->get_input("x") is now preferred over using $mybb->input['x'] because if the variable is not set, some PHP versions thrown warnings and errors. 
 
 Ex. $mybb->get_input('uid', 1); /* This returns the uid that the page was accessed with and casts it to the integer type.
 
@@ -29,16 +32,24 @@ $mybb->get_input('myarray', MyBB::INPUT_ARRAY);
 <b>Why should I use $mybb->get_input?</b>
 
 The use of $mybb->get_input is preferred over $mybb->input because it will automatically typecast the value to the correct 
-data type.  By default, the data type is string.  You should use this because if a person were to use parameter[]=x and your code
-uses $safepid = $db->escape_string($mybb->input['parameter']) it would return a warning stating that the value passed was an array,
-expected type string.  Using (int)$mybb->input['parameter'] is ok as well.
+data type. It also safely checks if a parameter is set so it doesn't trigger a warning or error in newer PHP versions. By default, the data type is string.  
+You should also use this because if a person were to use parameter[]=x and your code uses $safepid = $db->escape_string($mybb->input['parameter']) it would return a 
+warning stating that the value passed was an array, expected type string.  The method $mybb->get_input has a second parameter that allows you to specify the type
+of data you are expecting.  You should use one of the following constants if you want a specific type: MyBB::INPUT_INT, MyBB::INPUT_STRING, MyBB::INPUT_FLOAT, MyBB::INPUT_ARRAY,
+MyBB::INPUT_BOOL.
+
+<h2>PHP 8 Considerations</h2>
+
+PHP 8 brings some breaking changes to plugins that unless you wrote them very well to start with, you will need to make edits to get rid of errors and warnings. Two of
+the biggest issues include undefined array index and undefined variable.  These are caused when a particular variable is not initialized and something else tries to call it,
+usually when a template is being eval'd.  If you only want content to appear in a certain condition, you should first initialize the variable with an empty string and
+then use a control statement.  Another option is to use if / else or having a default case in a switch statement.
 
 New Setting Types:
 ==================
 A few new setting types were added to the 1.8 series of MyBB.  The first is called forumselect which builds a list 
 of selectable forums for the user.  Multiple selections are allowed.  There is an option for None and All.  Another new type
-is groupselect which builds a list of usergroups.  Multiple usergroups are allowed.  As of 1.8.3, no all method exists.  Lastly,
-there is numeric which makes the setting an integer.
+is groupselect which builds a list of usergroups.  Multiple usergroups are allowed.  Lastly, there is numeric which makes the setting an integer.
 
 
 How to do Pagination:
@@ -66,9 +77,9 @@ $pages = ceil($total / $perpage);
 3) Figure out the current page.
 
 [php]
-if($mybb->input['page'])
+if($mybb->get_input("page"))
 {
-  $page = $mybb->get_input('page', 1);
+  $page = $mybb->get_input("page", MyBB::INPUT_INT);
 }
 else
 {
@@ -141,7 +152,7 @@ foreach($usergroups as $group)
   if(in_array($group, $allowedusergroups))
   {
     $allowed = 1;
-    continue;
+    break;
   }
 }
 if(!$allowed)
@@ -220,8 +231,7 @@ this line should be commented out. */
 
 function theme_vars_admin_style_menu(&$sub_menu) /* Note that this variable is passed by reference. */
 {
-    $key = count($sub_menu) *10 + 10; /* We need a unique key here so this works well. */
-    $sub_menu[$key] = array(
+    $sub_menu[] = array(
     "id" => "theme_vars",
     "title" => "Theme Variables",
     "link" => "index.php?module=style-theme_vars"
@@ -246,7 +256,27 @@ called theme_variables.php in the /admin/modules/style directory.  Failure to do
 When you need to create forms you should use the DefaultForm and FormContainer classes.  Creating tables should be done using the
 TABLE class.  In the Admin CP, you do not need to use the function verify_post_check because it automatically does this
 anytime it receives a POST request.
-
+  
+  <h2>Table Class</h2>
+  The class for creating tables is already included in every admin page so you don't need to include any files.  To create a table header cell you will call
+  $table->construct_header("Content Goes Here").  There is a second parameter which is an associative array for style, class, id, and colspan. You will continue to do
+  this for each cell in the head row of the table.  Once you have done all cells in a row you will need to call $table->construct_row().  This actually outputs the
+  cells in the table row.  Regular table cells are done the same way as header cells except you use $table->construct_cell.  When you are done formatting the table,
+  you will call $table->output("Table Title").
+  
+  <h2>Admin Forms</h2>
+  Making a consistent form in the Admin CP uses two classes, DefaultForm and FormContainer.  DefaultForm is the class that contains all the code to generate form fields.
+  The form container is what outputs the HTML.  When you initialize the DefaultForm class you will use 2 parameters.  The first parameter should be the url that the form
+  goes to.  The second parameter is what method to use which usually is POST.  When you go to actually add a field to the form you will do so like this:
+  [php]
+  $form_container->output_row("Label Name", "Description", $form->generate_text_box("Field Name", "Field Value"), "ID");
+  // Note the ID is completely optional and is mainly used if you wish to invoke javascript to do something based on a response.
+  // Other methods include generate_yesno_radio, generate_onoff_radio, generate_select_box, generate_text_box, generate_text_area
+  // When you are ready to end the form, you should use this code
+  $form_container->end();
+        $form->output_submit_wrapper(array($form->generate_submit_button("Submit Text")));
+        $form->end();
+[/php]
   
 <h2>Making your plugin work easily with <a href="https://github.com/dragonexpert/permissionviewer">Permission Viewer</a></h2>
 
@@ -324,3 +354,5 @@ if(array_key_exists("myplugin", $activeplugins['active']))
 return false;
 }
 [/php]
+
+  Do note that this should mainly be used if your plugin does not add any database fields or tables since there is no guarantee a user did not manually add them.
